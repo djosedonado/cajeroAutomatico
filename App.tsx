@@ -1,36 +1,36 @@
-
 import React, {useState} from 'react';
 import {Controller, SubmitHandler, useForm} from 'react-hook-form';
-import {Button, View, Text, TextInput} from 'react-native';
+import {Button, View, Text, TextInput, Image, StyleSheet} from 'react-native';
 
 interface FormData {
   monto: string;
 }
 
 const App = () => {
-  const { handleSubmit, setValue, watch } = useForm<FormData>();
-  const [resultado, setResultado] = useState<string>('');
+  const [monto, setMonto] = useState<string>('');
+  const [resultados, setResultados] = useState<
+    {denominacion: number; billetes: number}[]
+  >([]);
 
-  const onSubmit: SubmitHandler<FormData> = data => {
-    const monto = parseFloat(data.monto);
-    if (!isNaN(monto)) {
+  const onSubmit = () => {
+    const montoFloat = parseFloat(monto);
+    if (!isNaN(montoFloat)) {
       try {
-        const resultadoRetiro = retirar(monto);
+        const resultadoRetiro = retirar(montoFloat);
         console.log(resultadoRetiro);
-        setResultado(resultadoRetiro);
+        setResultados(resultadoRetiro);
+        setMonto('');
       } catch (error) {
         console.error(error);
-        setResultado('Error al retirar');
+        setResultados([]);
       }
     } else {
       console.error('El monto ingresado no es válido');
-      setResultado('Monto inválido');
+      setResultados([]);
     }
   };
 
-  const monto = watch('monto');
-
-  function retirar(valor: number): string {
+  function retirar(valor: number): {denominacion: number; billetes: number}[] {
     const denominaciones: number[] = [10000, 20000, 50000, 100000];
     const billetes_a_entregar: number[] = [0, 0, 0, 0];
     let contador: number = 0;
@@ -53,26 +53,69 @@ const App = () => {
       }
     }
 
-    let resultado: string = '';
+    let resultados: {denominacion: number; billetes: number}[] = [];
     for (let i = 0; i < denominaciones.length; i++) {
-      resultado += `La cantidad de billetes de $${denominaciones[i]} es de ${billetes_a_entregar[i]}\n`;
+      resultados.push({
+        denominacion: denominaciones[i],
+        billetes: billetes_a_entregar[i],
+      });
     }
 
-    return resultado;
+    return resultados;
   }
 
+  const showBilletes = (denominacion: number): JSX.Element => {
+    let imagenSource;
+    switch (denominacion) {
+      case 10000:
+        imagenSource = require('./assets/billete10.jpg');
+        break;
+      case 20000:
+        imagenSource = require('./assets/billete20.jpg');
+        break;
+      case 50000:
+        imagenSource = require('./assets/billete50.jpg');
+        break;
+      case 100000:
+        imagenSource = require('./assets/billete100.jpg');
+        break;
+      default:
+        imagenSource = require('./assets/billetes.jpg');
+        break;
+    }
+    return <Image source={imagenSource} style={styles.image} />;
+  };
+
   return (
-    <View>
+    <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
       <TextInput
+        value={monto}
+        onChangeText={setMonto}
         placeholder="Monto a retirar"
         keyboardType="numeric"
-        value={monto}
-        onChangeText={value => setValue('monto', value)}
       />
-      <Button title="Retirar" onPress={handleSubmit(onSubmit)} />
-      {resultado !== '' && <Text>{resultado}</Text>}
+      <Button title="Retirar" onPress={onSubmit} />
+      {resultados.length > 0 && (
+        <View>
+          {resultados.map((resultado, index) => (
+            <View
+              key={index}
+              style={{flexDirection: 'row', alignItems: 'center'}}>
+              {showBilletes(resultado.denominacion)}
+              <Text>{`${resultado.billetes}`}</Text>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  image: {
+    width: 220,
+    height: 100,
+  },
+});
 
 export default App;
