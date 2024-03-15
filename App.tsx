@@ -1,118 +1,78 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+import React, {useState} from 'react';
+import {Controller, SubmitHandler, useForm} from 'react-hook-form';
+import {Button, View, Text, TextInput} from 'react-native';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
+interface FormData {
+  monto: string;
 }
 
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+const App = () => {
+  const { handleSubmit, setValue, watch } = useForm<FormData>();
+  const [resultado, setResultado] = useState<string>('');
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  const onSubmit: SubmitHandler<FormData> = data => {
+    const monto = parseFloat(data.monto);
+    if (!isNaN(monto)) {
+      try {
+        const resultadoRetiro = retirar(monto);
+        console.log(resultadoRetiro);
+        setResultado(resultadoRetiro);
+      } catch (error) {
+        console.error(error);
+        setResultado('Error al retirar');
+      }
+    } else {
+      console.error('El monto ingresado no es válido');
+      setResultado('Monto inválido');
+    }
   };
 
-  return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
+  const monto = watch('monto');
 
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
+  function retirar(valor: number): string {
+    const denominaciones: number[] = [10000, 20000, 50000, 100000];
+    const billetes_a_entregar: number[] = [0, 0, 0, 0];
+    let contador: number = 0;
+
+    while (valor > 0) {
+      let entra: boolean = false;
+      for (let i = contador; i < denominaciones.length; i++) {
+        if (valor >= denominaciones[i]) {
+          billetes_a_entregar[i]++;
+          valor -= denominaciones[i];
+          entra = true;
+        }
+      }
+      if (!entra && contador === denominaciones.length) {
+        throw new Error(
+          'El monto no se puede desglosar en billetes de las denominaciones disponibles.',
+        );
+      } else {
+        contador++;
+      }
+    }
+
+    let resultado: string = '';
+    for (let i = 0; i < denominaciones.length; i++) {
+      resultado += `La cantidad de billetes de $${denominaciones[i]} es de ${billetes_a_entregar[i]}\n`;
+    }
+
+    return resultado;
+  }
+
+  return (
+    <View>
+      <TextInput
+        placeholder="Monto a retirar"
+        keyboardType="numeric"
+        value={monto}
+        onChangeText={value => setValue('monto', value)}
+      />
+      <Button title="Retirar" onPress={handleSubmit(onSubmit)} />
+      {resultado !== '' && <Text>{resultado}</Text>}
+    </View>
+  );
+};
 
 export default App;
