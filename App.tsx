@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import {Controller, SubmitHandler, useForm} from 'react-hook-form';
 import {Button, View, Text, TextInput, Image, StyleSheet} from 'react-native';
+import {Double} from 'react-native/Libraries/Types/CodegenTypes';
 
 interface FormData {
   monto: string;
@@ -45,23 +46,23 @@ const App = () => {
         }
       }
       if (!entra && contador === denominaciones.length) {
-        throw new Error(
-          'El monto no se puede desglosar en billetes de las denominaciones disponibles.',
-        );
+        contador = 0;
       } else {
         contador++;
       }
     }
 
-    let resultados: {denominacion: number; billetes: number}[] = [];
+    const resultado: {denominacion: number; billetes: number}[] = [];
     for (let i = 0; i < denominaciones.length; i++) {
-      resultados.push({
-        denominacion: denominaciones[i],
-        billetes: billetes_a_entregar[i],
-      });
+      if (billetes_a_entregar[i] > 0) {
+        resultado.push({
+          denominacion: denominaciones[i],
+          billetes: billetes_a_entregar[i],
+        });
+      }
     }
 
-    return resultados;
+    return resultado;
   }
 
   const showBilletes = (denominacion: number): JSX.Element => {
